@@ -24,6 +24,60 @@ $$q'\cdot k' = q^T R(m\theta)^T R(n\theta)k = q^T R\big((n-m)\theta\big)k$$
 
 **对比绝对位置编码**：$x_m=\text{tok}_m+\text{pos}_m$，点积 $q\cdot k$ 展开是"内容·内容 + 内容·位置 + 位置·内容 + 位置·位置"四项交叉相加，**没有干净的数学结构能保证"只依赖相对距离"**，模型只能在训练里慢慢近似学出类似的规律，不是架构上写死的保证。
 
+## 数学落到代码：PyTorch 侧 vs C 侧，同一套旋转的两种实现
+
+先建频率表（位置信息在这一步就已经烘焙进去了），再在 `apply_rotary_emb` 里对 Q/K 做旋转：
+
+```python title="model.py -- precompute_freqs_cis(): 建频率表" hl=2
+def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
+    freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
+    t = torch.arange(end, device=freqs.device)
+    freqs = torch.outer(t, freqs).float()
+    freqs_cos = torch.cos(freqs)  # real part
+    freqs_sin = torch.sin(freqs)  # imaginary part
+    return freqs_cos, freqs_sin
+```
+
+```python title="model.py -- apply_rotary_emb(): 对 Q/K 做旋转" hl=10-11
+def apply_rotary_emb(xq, xk, freqs_cos, freqs_sin):
+    # reshape xq and xk to match the complex representation
+    xq_r, xq_i = xq.float().reshape(xq.shape[:-1] + (-1, 2)).unbind(-1)
+    xk_r, xk_i = xk.float().reshape(xk.shape[:-1] + (-1, 2)).unbind(-1)
+
+    freqs_cos = reshape_for_broadcast(freqs_cos, xq_r)
+    freqs_sin = reshape_for_broadcast(freqs_sin, xq_r)
+
+    # apply rotation using real numbers
+    xq_out_r = xq_r * freqs_cos - xq_i * freqs_sin
+    xq_out_i = xq_r * freqs_sin + xq_i * freqs_cos
+    xk_out_r = xk_r * freqs_cos - xk_i * freqs_sin
+    xk_out_i = xk_r * freqs_sin + xk_i * freqs_cos
+    return torch.stack([xq_out_r, xq_out_i], dim=-1).flatten(3), \
+           torch.stack([xk_out_r, xk_out_i], dim=-1).flatten(3)
+```
+
+C 端没有预先建表，而是**逐 token 现算** `cos`/`sin`（推理只需要一个位置，不值得为整张表付出内存/带宽）：
+
+```c title="run.c -- forward(): RoPE 现算 cos/sin 并旋转 q、k" hl=3-5,11-13
+for (int i = 0; i < dim; i+=2) {
+    int head_dim = i % head_size;
+    float freq = 1.0f / powf(10000.0f, head_dim / (float)head_size);
+    float val = pos * freq;
+    float fcr = cosf(val);
+    float fci = sinf(val);
+    int rotn = i < kv_dim ? 2 : 1; // how many vectors? 2 = q & k, 1 = q only
+    for (int v = 0; v < rotn; v++) {
+        float* vec = v == 0 ? s->q : s->k;
+        float v0 = vec[i];
+        float v1 = vec[i+1];
+        vec[i]   = v0 * fcr - v1 * fci;
+        vec[i+1] = v0 * fci + v1 * fcr;
+    }
+}
+```
+
+`fcr = cos(pos*freq)`、`fci = sin(pos*freq)` 就是 PyTorch 侧 `freqs_cos[pos]`/`freqs_sin[pos]` 这一行的现算版本；`rotn = i < kv_dim ? 2 : 1` 是 GQA 的直接体现——当 `dim`（q 的宽度）比 `kv_dim`（k 的宽度）大时，超出 `kv_dim` 的部分只旋转 q，不旋转 k（因为这部分 k 根本不存在）。
+
 ## RoPE 的额外好处
 
 | 好处 | 原因 |

@@ -52,11 +52,31 @@ pages:
     subtitle: "DMA 的硬件约束，以及 Karpathy 明知丑陋仍选择的 hack"
 
   - num: 11
-    slug: "11-comparison-table"
+    slug: "11-sampling-strategies"
+    title: "run.c 采样策略：从 greedy 到 nucleus sampling"
+    subtitle: "temperature/top-p 真实实现，对比 model.py 的 top-k"
+
+  - num: 12
+    slug: "12-lr-schedule-loss"
+    title: "学习率调度与损失评估：get_lr / estimate_loss"
+    subtitle: "warmup + 余弦衰减，多批平均换取更稳的 loss 估计"
+
+  - num: 13
+    slug: "13-optimizer-mfu"
+    title: "优化器配置与 MFU 估算"
+    subtitle: "按维度分组 weight decay，PaLM 论文的 FLOPs 公式"
+
+  - num: 14
+    slug: "14-autograd-mechanism"
+    title: "PyTorch autograd 机制：loss.backward() 背后发生了什么"
+    subtitle: "计算图、grad_fn、链式法则，以及混合精度的 GradScaler"
+
+  - num: 15
+    slug: "15-comparison-table"
     title: "nanoGPT vs llama2.c 全流程对照"
     subtitle: "12 个维度，从数据源到推理生成逐项对比"
 
-  - num: 12
-    slug: "12-learning-status"
+  - num: 16
+    slug: "16-learning-status"
     title: "学习进度与下一步"
     subtitle: "诚实标注：哪些已经吃透，哪些还没深入"

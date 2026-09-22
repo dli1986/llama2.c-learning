@@ -41,17 +41,64 @@ STATIC_DIR = ROOT / "static"
 SVG_DIR = STATIC_DIR / "svg"
 DIST_DIR = ROOT / "dist"
 
-pygments_formatter = HtmlFormatter(style="monokai", cssclass="hl-code", nowrap=False)
 LEXERS = {
     "python": PythonLexer(),
     "c": CLexer(),
     "text": TextLexer(),
 }
 
+# fence info string convention: ```c title="run.c -- encode()" hl=12-18,25
+FENCE_TITLE_RE = re.compile(r'title="([^"]*)"')
+FENCE_HL_RE = re.compile(r'hl=([\d,\-]+)')
+CODE_PANEL_RE = re.compile(
+    r'<pre class="hl-code"( data-panel-title="([^"]*)")?>(.*?)</pre>', re.DOTALL
+)
+
+
+def parse_hl_lines(attrs):
+    hl_lines = []
+    m = FENCE_HL_RE.search(attrs)
+    if not m:
+        return hl_lines
+    for part in m.group(1).split(","):
+        if "-" in part:
+            a, b = part.split("-")
+            hl_lines.extend(range(int(a), int(b) + 1))
+        else:
+            hl_lines.append(int(part))
+    return hl_lines
+
 
 def highlight_code(code, lang, attrs):
+    """Real code from llama2.c, verbatim. `hl=` marks the core line(s) to call
+    out (rendered as a highlighted bar, not just a color swap); `title=`
+    renders a nanoGPT-style title bar (usually "file.ext -- function()")
+    naming exactly which real source this snippet came from."""
     lexer = LEXERS.get((lang or "").lower(), TextLexer())
-    return highlight(code, lexer, pygments_formatter)
+    hl_lines = parse_hl_lines(attrs)
+    formatter = HtmlFormatter(style="monokai", nowrap=True, hl_lines=hl_lines)
+    inner = highlight(code, lexer, formatter)
+    title_m = FENCE_TITLE_RE.search(attrs)
+    if title_m:
+        title_attr = f' data-panel-title="{html_lib.escape(title_m.group(1))}"'
+    else:
+        title_attr = ""
+    # must start with "<pre" so markdown-it-py's fence rule doesn't re-wrap
+    # this in an extra <pre><code>...</code></pre> (see RendererHTML.fence).
+    return f'<pre class="hl-code"{title_attr}>{inner}</pre>'
+
+
+def wrap_code_panels(html):
+    """Post-process: <pre data-panel-title="X">...</pre> -> nanoGPT-style
+    .code-panel with a title bar, once per rendered page (titled snippets
+    only -- untitled fences stay plain, unchanged from before)."""
+    def repl(m):
+        title, body = m.group(2), m.group(3)
+        pre = f'<pre class="hl-code">{body}</pre>'
+        if title is None:
+            return pre
+        return f'<div class="code-panel"><div class="code-title">{title}</div>{pre}</div>'
+    return CODE_PANEL_RE.sub(repl, html)
 
 
 md = MarkdownIt("commonmark", {"html": True, "highlight": highlight_code}).enable("table")
@@ -133,7 +180,7 @@ def main():
         md_path = PAGES_DIR / f"{p['slug']}.md"
         source = md_path.read_text(encoding="utf-8")
         protected, math_store = protect_math(source)
-        body_html = inline_diagrams(restore_math(md.render(protected), math_store))
+        body_html = wrap_code_panels(inline_diagrams(restore_math(md.render(protected), math_store)))
         prev_page = pages[i - 1] if i > 0 else None
         next_page = pages[i + 1] if i < len(pages) - 1 else None
         html = page_template.render(

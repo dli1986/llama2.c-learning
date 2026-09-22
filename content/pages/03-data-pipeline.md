@@ -6,12 +6,30 @@
 2. **`train_vocab(vocab_size)`**：**可选**，只有 `vocab_source="custom"` 时才需要——用 `SentencePieceTrainer` 在语料上**训练**一套新的 BPE 子词规则，`vocab_size` 是**设定的目标**，不是数出来的。默认 `vocab_source="llama2"` 时**跳过这一步**，直接用 Meta 官方 `tokenizer.model`（32000 token）。
 3. **`pretokenize(vocab_size)`**：调用 `process_shard` 把每个 shard 的故事文本编码成 token id，写成 `dataXX.bin`。
 
-## `process_shard`：并行处理 50 个 shard
+## `process_shard` 与 `pretokenize`：并行处理 50 个 shard
 
-```python
-fun = partial(process_shard, vocab_size=vocab_size)   # 只是凑参数个数，给 executor.map 用
-with ProcessPoolExecutor() as executor:
-    executor.map(fun, enumerate(shard_filenames))       # 真正的并行在这里（多进程绕过 GIL）
+```python title="tinystories.py -- pretokenize(): 多进程调度" hl=4-5
+def pretokenize(vocab_size):
+    data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
+    shard_filenames = sorted(glob.glob(os.path.join(data_dir, "*.json")))
+    fun = partial(process_shard, vocab_size=vocab_size)
+    with ProcessPoolExecutor() as executor:
+        executor.map(fun, enumerate(shard_filenames))
+```
+
+```python title="tinystories.py -- process_shard(): 单个 shard 的真实工作" hl=8
+def process_shard(args, vocab_size):
+    shard_id, shard = args
+    tokenizer_model = get_tokenizer_model_path(vocab_size)
+    enc = Tokenizer(tokenizer_model)
+    with open(shard, "r") as f:
+        data = json.load(f)
+    all_tokens = []
+    for example in tqdm(data, position=shard_id):
+        text = example["story"].strip()
+        tokens = enc.encode(text, bos=True, eos=False)
+        all_tokens.extend(tokens)
+    all_tokens = np.array(all_tokens, dtype=np.uint16)
 ```
 
 <div data-diagram="data-shard-pipeline" data-caption="50 个 shard 并行编码，再切成不重叠定长块打乱顺序"></div>
@@ -23,17 +41,24 @@ with ProcessPoolExecutor() as executor:
 
 ## `PretokDataset`：对应 nanoGPT 的 `get_batch()`
 
-```python
-m = np.memmap(shard, dtype=np.uint16, mode="r")     # 又是 mmap！跟 run.c 读权重同一手法
-num_batches = len(m) // self.max_seq_len - 1          # 实际是"能切出多少个样本"
-ixs = list(range(num_batches)); rng.shuffle(ixs)
-for ix in ixs:
-    start = ix * self.max_seq_len
-    end = start + self.max_seq_len + 1                # 多取1个token，为了同时切出 x 和 y
-    chunk = torch.from_numpy((m[start:end]).astype(np.int64))
-    x = chunk[:-1]   # 长度 = max_seq_len
-    y = chunk[1:]    # 长度 = max_seq_len（和 x 等长，只是错位1位）
-    yield x, y
+```python title="tinystories.py -- PretokDataset.__iter__()" hl=6,10-11
+while True:
+    rng.shuffle(shard_filenames)
+    for shard in shard_filenames:
+        # open the dataset for reading but keep it on disk with memmap
+        m = np.memmap(shard, dtype=np.uint16, mode="r")
+        num_batches = len(m) // self.max_seq_len
+        num_batches -= 1  # drop the last partial batch
+        ixs = list(range(num_batches))
+        rng.shuffle(ixs)
+        for ix in ixs:
+            start = ix * self.max_seq_len
+            end = start + self.max_seq_len + 1
+            # calling .astype will copy the data into a new numpy array, now in RAM
+            chunk = torch.from_numpy((m[start:end]).astype(np.int64))
+            x = chunk[:-1]
+            y = chunk[1:]
+            yield x, y
 ```
 
 | | nanoGPT `get_batch()` | `PretokDataset` |
@@ -45,14 +70,19 @@ for ix in ixs:
 
 ## `Task.iter_batches`：Python 工程模式集合
 
-```python
+```python title="tinystories.py -- Task.iter_batches()" hl=8-9
 class Task:
+
     @staticmethod
     def iter_batches(batch_size, device, num_workers=0, **dataset_kwargs):
         ds = PretokDataset(**dataset_kwargs)
-        dl = torch.utils.data.DataLoader(ds, batch_size=batch_size, pin_memory=True, num_workers=num_workers)
+        dl = torch.utils.data.DataLoader(
+            ds, batch_size=batch_size, pin_memory=True, num_workers=num_workers
+        )
         for x, y in dl:
-            yield x.to(device, non_blocking=True), y.to(device, non_blocking=True)
+            x = x.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
+            yield x, y
 ```
 
 - **`@staticmethod`**：不需要 `self`，`Task` 是纯粹的"命名空间类"（不是 GoF 工厂模式），从未被实例化，只是把函数组织在一个有意义的名字下。

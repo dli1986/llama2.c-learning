@@ -2,6 +2,27 @@
 
 `stories15M.bin` 是 Karpathy 用仓库自带的 `train.py` 在 TinyStories 数据集上训练、再用 `export.py` 导出的 checkpoint；执行 `./run stories15M.bin` 是**一次推理**（自回归生成），不是训练。命令行打印的 `achieved tok/s` 是推理吞吐量，不是训练速度。
 
+`run.c` 的 `main()` 就是整份笔记要通读的全部内容的入口——四行代码，对应下面四个板块要讲的四件事：
+
+```c title="run.c -- main(): 整条推理链路的真实入口" hl=3,6,9,13
+// build the Transformer via the model .bin file
+Transformer transformer;
+build_transformer(&transformer, checkpoint_path);
+
+// build the Tokenizer via the tokenizer .bin file
+Tokenizer tokenizer;
+build_tokenizer(&tokenizer, tokenizer_path, transformer.config.vocab_size);
+
+// build the Sampler
+Sampler sampler;
+build_sampler(&sampler, transformer.config.vocab_size, temperature, topp, rng_seed);
+
+// run!
+generate(&transformer, &tokenizer, &sampler, prompt, steps);
+```
+
+`build_transformer`（mmap 权重）、`build_tokenizer`（读词表）、`build_sampler`（采样超参数）、`generate`（逐 token 推理循环）——本站接下来每一页，都是在拆解这四行代码背后各自的真实实现。
+
 ## 完整链路
 
 <div data-diagram="pipeline-overview" data-caption="三条独立的数据/模型管线，最终在 run.c 里汇合"></div>

@@ -152,9 +152,16 @@ h1 {
 .aside li { margin: 5px 0; }
 
 /* pygments (monokai) code highlighting inside fenced code blocks */
-.page-prose pre.hl-code { padding: 0; }
-.hl-code .hll { background-color: #49483e }
-.hl-code { background: #0a0e14; }
+.page-prose pre.hl-code {
+  background: #0a0e14; border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 16px; overflow-x: auto; margin: 14px 0; display: block;
+  font-family: 'Cascadia Code', Consolas, monospace; font-size: 14px; line-height: 1.7;
+  color: #d6d6d6; white-space: pre;
+}
+.hl-code .hll {
+  display: block; margin: 0 -16px; padding: 1px 15px;
+  background: rgba(248,81,73,0.16); border-left: 3px solid var(--red);
+}
 .hl-code .c { color: #75715e } /* Comment */
 .hl-code .k { color: #66d9ef } /* Keyword */
 .hl-code .n { color: #d6d6d6 } /* Name */
@@ -167,6 +174,18 @@ h1 {
 .hl-code .kc { color: #ae81ff } /* Keyword.Constant */
 .hl-code .kt { color: #66d9ef } /* Keyword.Type (C) */
 .hl-code .cp { color: #75715e } /* Preproc (C #include) */
+
+/* ---------- real-code panels: verbatim llama2.c snippets with a title bar,
+   core line(s) called out via .hll (see build/build.py wrap_code_panels) ---------- */
+.code-panel {
+  background: #0a0e14; border: 1px solid var(--border); border-radius: 8px;
+  margin: 16px 0; overflow: hidden;
+}
+.code-panel .code-title {
+  padding: 9px 16px; border-bottom: 1px solid var(--border); background: var(--panel2);
+  font-size: 13px; color: var(--text-dim); font-family: 'Cascadia Code', Consolas, monospace;
+}
+.code-panel pre.hl-code { margin: 0; border: none; border-radius: 0; }
 
 /* ---------- desktop: wider canvas + larger type (mobile sizes above stay as-is) ---------- */
 @media (min-width: 900px) {
@@ -186,8 +205,9 @@ h1 {
   .page-prose h2 { font-size: 24px; margin: 38px 0 16px; padding-top: 28px; }
   .page-prose h3 { font-size: 20px; }
   .page-prose code { font-size: 16px; }
-  .page-prose pre { padding: 18px 22px; }
-  .page-prose pre code { font-size: 16px; line-height: 1.75; }
+  .page-prose pre.hl-code { padding: 18px 22px; font-size: 15.5px; line-height: 1.8; }
+  .code-panel .code-title { font-size: 14px; padding: 11px 20px; }
+  .code-panel pre.hl-code { padding: 18px 22px; }
   .page-prose table { font-size: 15.5px; }
   .page-prose th, .page-prose td { padding: 10px 16px; }
 

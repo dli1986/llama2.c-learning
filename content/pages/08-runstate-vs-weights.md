@@ -6,6 +6,38 @@
 | 每层几份 | `n_layers` 份（拼接在一个大数组里） | **只有 1 份**，每层循环反复覆写 |
 | 生命周期 | 从 checkpoint 加载后不变 | 一次 forward 调用内产生、消费、丢弃 |
 
+两份 struct 的真实定义，逐字段对照着看最直观：
+
+```c title="run.c -- TransformerWeights: 训练学到的、只读的参数" hl=4,6
+typedef struct {
+    float* token_embedding_table;    // (vocab_size, dim)
+    float* rms_att_weight; // (layer, dim)
+    float* wq; // (layer, dim, n_heads * head_size)
+    float* wk; // (layer, dim, n_kv_heads * head_size)
+    float* wo; // (layer, n_heads * head_size, dim)
+    float* w1; float* w2; float* w3; // ffn, each (layer, ...)
+    float* rms_final_weight; // (dim,)
+    float* wcls; // classifier weights, optionally shared with token_embedding_table
+} TransformerWeights;
+```
+
+```c title="run.c -- RunState: 前向传播中间结果，只 1 份" hl=10-11
+typedef struct {
+    float *x; // activation at current time stamp (dim,)
+    float *xb; // same, but inside a residual branch (dim,)
+    float *xb2; // an additional buffer just for convenience (dim,)
+    float *hb; // buffer for hidden dimension in the ffn (hidden_dim,)
+    float *hb2;
+    float *q; float *k; float *v; // query/key/value (dim,)
+    float *att; // buffer for scores/attention values (n_heads, seq_len)
+    float *logits; // output logits
+    float* key_cache;   // (layer, seq_len, dim)
+    float* value_cache; // (layer, seq_len, dim)
+} RunState;
+```
+
+`TransformerWeights` 每个指针都带 `(layer, ...)` 前缀，因为它们确实是 `n_layers` 份权重拼接在一个大数组里（见「C 语言里的"张量"」页的 `memory_map_weights`）；`RunState` 里绝大多数字段没有 layer 维度——因为它们只是"当前处理到哪一层"的临时中转站，`forward()` 的 `for` 循环每跑一层都覆写同一块内存，只有 `key_cache`/`value_cache` 这两个字段例外（下面详述）。
+
 <div data-diagram="runstate-vs-weights" data-caption="权重 n_layers 份常驻；激活值只 1 份，像水波一样反复覆写"></div>
 
 **"current wave of activations"**：`x`/`xb`/`hb` 等 buffer 只分配一份，`for l in 0..n_layers` 循环每次都覆写同一块内存——像水波一样冲刷过去，不像权重那样 n_layers 份并存。

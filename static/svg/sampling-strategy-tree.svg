@@ -1,0 +1,59 @@
+<svg viewBox="0 0 380 480" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ars1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#161b22;stroke:#30363d;stroke-width:1;}
+    .dec{fill:#1e1530;stroke:#bc8cff;stroke-width:1;}
+    .leaf{fill:#0f2415;stroke:#3fb950;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:10.5px;}
+    .sub{fill:#8b949e;font-size:9px;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#58a6ff;stroke-width:1.4;fill:none;marker-end:url(#ars1);}
+    .cond{fill:#58a6ff;font-size:9px;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <rect class="box" x="90" y="10" width="200" height="34"/>
+  <text class="lbl" x="105" y="31">sample(sampler, logits)</text>
+
+  <line class="arrow" x1="190" y1="44" x2="190" y2="72"/>
+  <rect class="dec" x="70" y="72" width="240" height="36"/>
+  <text class="lbl" x="85" y="94" fill="#bc8cff">temperature == 0 ?</text>
+
+  <line class="arrow" x1="120" y1="108" x2="80" y2="140"/>
+  <text class="cond" x="30" y="128">是（greedy）</text>
+  <rect class="leaf" x="10" y="140" width="140" height="40"/>
+  <text class="lbl" x="20" y="158" font-size="9.5" fill="#3fb950">sample_argmax()</text>
+  <text class="sub" x="20" y="172">取最大概率的 index</text>
+
+  <line class="arrow" x1="260" y1="108" x2="290" y2="140"/>
+  <text class="cond" x="290" y="128">否</text>
+  <rect class="box" x="200" y="140" width="170" height="52"/>
+  <text class="lbl" x="212" y="160" font-size="9.5">logits /= temperature</text>
+  <text class="lbl" x="212" y="176" font-size="9.5">softmax(logits) → 概率</text>
+
+  <line class="arrow" x1="285" y1="192" x2="285" y2="222"/>
+  <rect class="dec" x="180" y="222" width="200" height="36"/>
+  <text class="lbl" x="195" y="244" fill="#bc8cff" font-size="9.5">topp&lt;=0 或 topp&gt;=1 ?</text>
+
+  <line class="arrow" x1="230" y1="258" x2="200" y2="290"/>
+  <text class="cond" x="140" y="278">是（关闭 nucleus）</text>
+  <rect class="leaf" x="140" y="290" width="140" height="40"/>
+  <text class="lbl" x="150" y="308" font-size="9.5" fill="#3fb950">sample_mult()</text>
+  <text class="sub" x="150" y="322">按概率分布直接采样</text>
+
+  <line class="arrow" x1="340" y1="258" x2="340" y2="290"/>
+  <text class="cond" x="290" y="278">否</text>
+  <rect class="leaf" x="280" y="290" width="90" height="40" fill="#0f2415" stroke="#3fb950"/>
+  <text class="lbl" x="285" y="308" font-size="9" fill="#3fb950">sample_topp()</text>
+  <text class="sub" x="285" y="322" font-size="8">nucleus 采样</text>
+
+  <rect x="20" y="348" width="340" height="112" fill="#0a0e14" stroke="#30363d" rx="4"/>
+  <text class="lbl" x="35" y="368" fill="#58a6ff" font-weight="bold">sample_topp()：只在累计概率超过 topp 的最小 token 集合里采样</text>
+  <text class="sub" x="35" y="386">1. 按概率降序排序（先用 cutoff=(1-topp)/(n-1) 粗筛）</text>
+  <text class="sub" x="35" y="400">2. 累加概率，一旦超过 topp 就截断（last_idx）</text>
+  <text class="sub" x="35" y="414">3. 只在截断后的候选里按相对概率采样</text>
+  <text class="sub" x="35" y="434" fill="#f0883e">对比 model.py 的 generate()：用的是 top_k（只保留</text>
+  <text class="sub" x="35" y="448" fill="#f0883e">概率最高的 k 个），不是 top_p——两种不同的截断策略。</text>
+</svg>

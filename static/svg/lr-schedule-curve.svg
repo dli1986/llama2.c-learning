@@ -1,0 +1,43 @@
+<svg viewBox="0 0 380 320" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <style>
+    .axis{stroke:#30363d;stroke-width:1.2;}
+    .curve{stroke:#58a6ff;stroke-width:2.2;fill:none;}
+    .zone{fill:#1e1530;opacity:.35;}
+    .lbl{fill:#e6edf3;font-size:10px;}
+    .sub{fill:#8b949e;font-size:9px;font-family:'Segoe UI',sans-serif;}
+    .tag{fill:#bc8cff;font-size:9.5px;font-family:'Segoe UI',sans-serif;font-weight:bold;}
+  </style>
+
+  <text class="lbl" x="20" y="20" font-size="11" font-weight="bold" fill="#58a6ff">get_lr(it)：warmup + 余弦衰减</text>
+
+  <line class="axis" x1="40" y1="40" x2="40" y2="260"/>
+  <line class="axis" x1="40" y1="260" x2="360" y2="260"/>
+  <text class="sub" x="8" y="84">learning_rate</text>
+  <text class="sub" x="20" y="224">min_lr</text>
+  <text class="sub" x="330" y="278">iter</text>
+
+  <rect class="zone" x="40" y="40" width="80" height="220"/>
+  <text class="tag" x="46" y="52">① 线性 warmup</text>
+
+  <rect class="zone" x="120" y="40" width="180" height="220" opacity=".2"/>
+  <text class="tag" x="150" y="52">② 余弦衰减</text>
+
+  <text class="tag" x="312" y="52">③ min_lr</text>
+
+  <line stroke-dasharray="2,2" stroke="#30363d" x1="40" y1="80" x2="360" y2="80"/>
+  <line stroke-dasharray="2,2" stroke="#30363d" x1="40" y1="220" x2="360" y2="220"/>
+
+  <polyline class="curve" points="
+    40,260 120,80
+    138,83.4 156,93.4 174,108.8 192,128.4 210,150 228,171.6 246,191.2 264,206.6 282,216.6 300,220
+    360,220
+  "/>
+
+  <line stroke-dasharray="3,3" stroke="#8b949e" x1="120" y1="40" x2="120" y2="260"/>
+  <text class="sub" x="94" y="272">warmup_iters</text>
+  <line stroke-dasharray="3,3" stroke="#8b949e" x1="300" y1="40" x2="300" y2="260"/>
+  <text class="sub" x="270" y="272">lr_decay_iters</text>
+
+  <rect x="20" y="286" width="340" height="0" fill="none"/>
+  <text class="sub" x="20" y="300">coeff = 0.5·(1+cos(π·decay_ratio))，decay_ratio ∈ [0,1] 之间连续插值</text>
+</svg>

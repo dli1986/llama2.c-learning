@@ -16,23 +16,26 @@
 
 **`DataLoader(pin_memory=True)` 的作用**：worker 进程产出的 tensor 默认是普通内存，`pin_memory=True` 让 `DataLoader` 在交给主进程前，额外拷贝一次到锁页内存——用一次确定的 CPU 开销，换取后面 `.to(device, non_blocking=True)` 能**真正异步、能与 GPU 计算重叠**的资格。
 
-**具体重叠点**（`train.py`）：
+**具体重叠点**（`train.py` 训练主循环的真实结构）：
 
-```python
-with ctx:
-    logits = model(X, Y)              # GPU在算forward
-    loss = ... / gradient_accumulation_steps
-X, Y = next(train_batch_iter)         # 如果数据锁页,这里是真异步,不用等GPU算完
-scaler.scale(loss).backward()
+```python title="train.py -- 训练循环: 异步预取与反向传播重叠" hl=5
+for micro_step in range(gradient_accumulation_steps):
+    with ctx:
+        logits = model(X, Y)
+        loss = raw_model.last_loss
+        loss = loss / gradient_accumulation_steps
+    # immediately async prefetch next batch while model is doing the forward pass on the GPU
+    X, Y = next(train_batch_iter)
+    scaler.scale(loss).backward()
 ```
 
-意图：GPU 算当前 batch 的同时，CPU 应该已经在准备+搬运下一个 batch——这个"同时"能否兑现，完全取决于 `pin_memory` 有没有生效。
+意图：GPU 算当前 batch（`model(X, Y)`）的同时，CPU 应该已经在准备+搬运下一个 batch（第 5 行 `next(train_batch_iter)` 紧跟在 forward 之后、backward 之前调用）——这个"同时"能否兑现，完全取决于 `pin_memory` 有没有生效。
 
 ## `configurator.py`：没有 `main()`/`argparse`，靠 `exec` 就地改全局变量
 
 **Karpathy 的原话——不是简单的"不喜欢"，是"明知丑陋但主动取舍"**：
 
-```python
+```python title="configurator.py -- 模块开头的自白"
 """
 Poor Man's Configurator. Probably a terrible idea.
 ...
@@ -45,10 +48,10 @@ complexity and having to prepend config. to every single variable.
 
 **机制拆解**：
 
-```python
+```python title="train.py -- config_keys 扫描 + exec() 注入" hl=3
 config_keys = [k for k, v in globals().items()
                if not k.startswith("_") and isinstance(v, (int, float, bool, str))]
-exec(open("configurator.py").read())     # 关键hack
+exec(open("configurator.py").read())
 config = {k: globals()[k] for k in config_keys}
 ```
 
@@ -58,15 +61,18 @@ config = {k: globals()[k] for k in config_keys}
 
 **`configurator.py` 内部：`sys.argv` 解析**：
 
-```python
+```python title="configurator.py -- sys.argv 解析" hl=8-9
 for arg in sys.argv[1:]:
     if '=' not in arg:
-        exec(open(arg).read())          # 当成另一个配置文件，整个exec进来
+        # assume it's the name of a config file
+        exec(open(arg).read())
     else:
-        key, val = arg[2:].split('=')   # --batch_size=32 这种
-        if key in globals():             # 必须是已存在的全局变量，防止手滑创建新变量
-            attempt = literal_eval(val)   # 字符串"32"解析成真正的Python int
-            assert type(attempt) == type(globals()[key])   # 类型必须匹配
+        # assume it's a --key=value argument
+        key, val = arg.split('=')
+        key = key[2:]
+        if key in globals():
+            attempt = literal_eval(val)
+            assert type(attempt) == type(globals()[key])
             globals()[key] = attempt
 ```
 

@@ -12,6 +12,29 @@ $$\text{offset}(i_1,\dots,i_k) = i_1\cdot(d_2\cdots d_k) + \cdots + i_k$$
 | `w->wq + l*dim*dim` | `(n_layers,dim,dim)` | $l\cdot(dim\cdot dim)+i\cdot dim+j$ |
 | `key_cache + loff + t*kv_dim` | `(n_layers,seq_len,kv_dim)` | $l\cdot(seq\_len\cdot kv\_dim)+t\cdot kv\_dim+\dots$ |
 
+真实的指针行进过程——`memory_map_weights` 不做任何拷贝，只是把一个 `float*` 指针按照权重大小依次往前挖：
+
+```c title="run.c -- memory_map_weights(): 纯指针算术，零拷贝" hl=6-7,9-10
+void memory_map_weights(TransformerWeights *w, Config* p, float* ptr, int shared_weights) {
+    int head_size = p->dim / p->n_heads;
+    unsigned long long n_layers = p->n_layers;
+    w->token_embedding_table = ptr;
+    ptr += p->vocab_size * p->dim;
+    w->rms_att_weight = ptr;
+    ptr += n_layers * p->dim;
+    w->wq = ptr;
+    ptr += n_layers * p->dim * (p->n_heads * head_size);
+    w->wk = ptr;
+    ptr += n_layers * p->dim * (p->n_kv_heads * head_size);
+    // ... wv, wo, rms_ffn_weight, w1, w2, w3 依次同理
+    w->rms_final_weight = ptr;
+    ptr += p->dim;
+    w->wcls = shared_weights ? w->token_embedding_table : ptr;
+}
+```
+
+没有任何 `malloc`/拷贝——每一行只是把 `ptr` 指向文件里的下一段地址，再把指针向前挖过刚才那个字段的总大小（`p->vocab_size * p->dim`、`n_layers * p->dim * (...)` …）。这个函数自身就是“偏移公式只写一处”的实例——每个字段的起始地址都是上一个字段的终点，顺序必须与 `export.py` 写入的顺序一致，否则整个模型会静默错位。
+
 ## shape-only vs shape+stride：不是记法不同，是表达力不同
 
 只存 shape、靠"标准连续假设"现算 stride，**只能表达完全连续的布局**。以下场景必须显式存 stride（与 shape 分离）才能表达：
@@ -37,7 +60,19 @@ PyTorch 的 `Tensor` 独立维护 `.shape` 和 `.stride()` 正是因为这个原
 
 - 激活值 `h`：`(B,T,C)`，在 `for layer in self.layers` 循环里被反复覆写，没有 layer 轴。
 - 权重：`self.layers` 是 `nn.ModuleList`，每层是**独立 Python 对象**（`self.layers[0].attention.wq.weight` 各自形状 `(dim,dim)`），PyTorch 从没把它们拼成一个带 layer 轴的大 tensor。
-- `run.c` 注释里的 `layer` 轴，来自 `export.py` 把 `n_layers` 个独立小矩阵**首尾拼接**进一个文件的动作（`for layer in model.layers: serialize_fp32(...)`）——是 C 端为了用一个 mmap 指针 + 偏移量寻址，人为制造出来的轴。
+- `run.c` 注释里的 `layer` 轴，来自 `export.py` 把 `n_layers` 个独立小矩阵**首尾拼接**进一个文件的动作——是 C 端为了用一个 mmap 指针 + 偏移量寻址，人为制造出来的轴：
+
+```python title="export.py -- legacy_export(): layer 轴是这样被“拼”出来的" hl=2,4
+# attention weights
+for layer in model.layers:
+    serialize_fp32(out_file, layer.attention_norm.weight)
+for layer in model.layers:
+    serialize_fp32(out_file, layer.attention.wq.weight)
+for layer in model.layers:
+    serialize_fp32(out_file, layer.attention.wk.weight)
+```
+
+`model.layers` 是 `nn.ModuleList`，循环里每次 `layer.attention.wq.weight` 都是一个独立形状 `(dim,dim)` 的 Python 张量对象——**没有任何一个 PyTorch 张量真正拥有 `(n_layers,dim,dim)` 这个形状**。`for layer in model.layers: serialize_fp32(...)`（第 2/4 行）逐层写入文件的这个动作，才是 `run.c` 里 `(layer, dim, dim)` 这个形状注释的真正来源——导出时才产生的序列化人为产物，不是 PyTorch tensor 本身的形状。
 - 唯一没有 `layer` 前缀的 `token_embedding_table`/`rms_final_weight`，对应 `model.py` 里**不属于** `self.layers`、只在 `Transformer` 类里出现一次的字段（`self.tok_embeddings`、`self.norm`）。
 
 ## Tensor 不是 list——底层永远是"一整块连续内存"
