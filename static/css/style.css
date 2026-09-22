@@ -168,4 +168,30 @@ h1 {
 .hl-code .kt { color: #66d9ef } /* Keyword.Type (C) */
 .hl-code .cp { color: #75715e } /* Preproc (C #include) */
 
+/* ---------- desktop: wider canvas + larger type (mobile sizes above stay as-is) ---------- */
+@media (min-width: 900px) {
+  main { max-width: 1240px; padding: 40px 64px 110px; }
+  .site-title { font-size: 32px; }
+  .site-subtitle { font-size: 16px; max-width: 900px; }
+  .scope-note { font-size: 15.5px; }
+  h1 { font-size: 30px; }
+  .step-badge { width: 30px; height: 30px; font-size: 15px; }
+  .step-list a { font-size: 16.5px; padding: 16px 20px; }
+
+  .diagram-svg-wrap { padding: 22px; }
+  .diagram-svg-wrap svg { max-width: 760px; }
+  .diagram-caption { font-size: 14.5px; }
+
+  .page-prose { font-size: 18px; line-height: 1.9; }
+  .page-prose h2 { font-size: 24px; margin: 38px 0 16px; padding-top: 28px; }
+  .page-prose h3 { font-size: 20px; }
+  .page-prose code { font-size: 16px; }
+  .page-prose pre { padding: 18px 22px; }
+  .page-prose pre code { font-size: 16px; line-height: 1.75; }
+  .page-prose table { font-size: 15.5px; }
+  .page-prose th, .page-prose td { padding: 10px 16px; }
+
+  .aside { font-size: 16.5px; padding: 18px 24px; }
+}
+
 footer { text-align: center; color: var(--text-dim); font-size: 13px; padding: 34px; }
