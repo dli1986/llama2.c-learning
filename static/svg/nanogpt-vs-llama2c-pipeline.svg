@@ -1,0 +1,48 @@
+<svg viewBox="0 0 380 360" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar11" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .ng{fill:#0f1622;stroke:#58a6ff;stroke-width:1;}
+    .l2{fill:#1e1530;stroke:#bc8cff;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:9px;}
+    .sub{fill:#8b949e;font-size:8px;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#30363d;stroke-width:1.4;fill:none;marker-end:url(#ar11);}
+    .tag{font-size:9.5px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <text class="tag" x="20" y="16" fill="#58a6ff">nanoGPT（教学版）</text>
+  <rect class="ng" x="20" y="22" width="80" height="34"/><text class="lbl" x="26" y="42">字符级 stoi/itos</text>
+  <path class="arrow" d="M100,39 h16"/>
+  <rect class="ng" x="118" y="22" width="80" height="34"/><text class="lbl" x="124" y="35">绝对位置</text><text class="lbl" x="124" y="47">embedding 表</text>
+  <path class="arrow" d="M198,39 h16"/>
+  <rect class="ng" x="216" y="22" width="70" height="34"/><text class="lbl" x="222" y="35">独立 Head</text><text class="lbl" x="222" y="47">对象×N</text>
+  <path class="arrow" d="M286,39 h12"/>
+  <rect class="ng" x="300" y="22" width="60" height="34"/><text class="lbl" x="306" y="35">LayerNorm</text><text class="lbl" x="306" y="47">+ReLU FFN</text>
+
+  <text class="tag" x="20" y="90" fill="#bc8cff">llama2.c（工程版）</text>
+  <rect class="l2" x="20" y="96" width="80" height="34"/><text class="lbl" x="26" y="109">BPE 子词</text><text class="lbl" x="26" y="121">(sentencepiece)</text>
+  <path class="arrow" d="M100,113 h16"/>
+  <rect class="l2" x="118" y="96" width="80" height="34"/><text class="lbl" x="124" y="109">RoPE 旋转</text><text class="lbl" x="124" y="121">(无位置表)</text>
+  <path class="arrow" d="M198,113 h16"/>
+  <rect class="l2" x="216" y="96" width="70" height="34"/><text class="lbl" x="222" y="109">大矩阵+</text><text class="lbl" x="222" y="121">reshape/GQA</text>
+  <path class="arrow" d="M286,113 h12"/>
+  <rect class="l2" x="300" y="96" width="60" height="34"/><text class="lbl" x="306" y="109">RMSNorm</text><text class="lbl" x="306" y="121">+SwiGLU</text>
+
+  <line x1="20" y1="146" x2="360" y2="146" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <rect x="20" y="156" width="340" height="30" class="ng"/>
+  <text class="lbl" x="30" y="175">输出头：独立 lm_head 参数</text>
+  <rect x="20" y="192" width="340" height="30" class="l2"/>
+  <text class="lbl" x="30" y="211">输出头：与 token embedding 权重共享（weight tying）</text>
+
+  <rect x="20" y="230" width="340" height="30" class="ng"/>
+  <text class="lbl" x="30" y="249">推理：无 KV cache，朴素重算整段序列</text>
+  <rect x="20" y="266" width="340" height="30" class="l2"/>
+  <text class="lbl" x="30" y="285">推理（run.c）：KV cache + 增量解码，逐 token 前向</text>
+
+  <text class="sub" x="20" y="316">同一套 Transformer 骨架，llama2.c 每一处替换都是</text>
+  <text class="sub" x="20" y="330">真实的 Llama 2 论文设计，不是随手改动——细节见各专题页。</text>
+</svg>

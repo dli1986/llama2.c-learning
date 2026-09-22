@@ -1,0 +1,57 @@
+<svg viewBox="0 0 380 480" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#161b22;stroke:#30363d;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:10px;}
+    .sub{fill:#8b949e;font-size:9px;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#58a6ff;stroke-width:1.6;fill:none;marker-end:url(#ar3);}
+    .alabel{fill:#58a6ff;font-size:9px;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <text class="sub" x="20" y="16" fill="#58a6ff" font-size="11" font-weight="bold">50 个 shard 的 .json（原始故事）</text>
+  <rect class="box" x="20" y="22" width="70" height="30"/><text class="lbl" x="30" y="41">shard0</text>
+  <rect class="box" x="96" y="22" width="70" height="30"/><text class="lbl" x="106" y="41">shard1</text>
+  <rect class="box" x="172" y="22" width="30" height="30"/><text class="lbl" x="180" y="41">…</text>
+  <rect class="box" x="208" y="22" width="82" height="30"/><text class="lbl" x="214" y="41">shard49</text>
+
+  <line class="arrow" x1="190" y1="52" x2="190" y2="88"/>
+  <text class="alabel" x="200" y="70">ProcessPoolExecutor.map</text>
+  <text class="alabel" x="200" y="82">(process_shard, 多进程绕开 GIL)</text>
+
+  <text class="sub" x="20" y="106" fill="#58a6ff" font-size="11" font-weight="bold">50 个 dataXX.bin（token id 序列）</text>
+  <rect class="box" x="20" y="112" width="70" height="30"/><text class="lbl" x="30" y="131">data00</text>
+  <rect class="box" x="96" y="112" width="70" height="30"/><text class="lbl" x="106" y="131">data01</text>
+  <rect class="box" x="172" y="112" width="30" height="30"/><text class="lbl" x="180" y="131">…</text>
+  <rect class="box" x="208" y="112" width="82" height="30"/><text class="lbl" x="214" y="131">data49</text>
+
+  <line class="arrow" x1="190" y1="142" x2="190" y2="180"/>
+  <text class="alabel" x="200" y="160">np.memmap（懒加载）</text>
+  <text class="alabel" x="200" y="172">按 max_seq_len 切不重叠定长块，打乱块顺序</text>
+
+  <rect class="box" x="20" y="180" width="340" height="50" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="lbl" x="35" y="200" fill="#bc8cff">PretokDataset.__iter__</text>
+  <text class="sub" x="35" y="216">yield x=chunk[:-1], y=chunk[1:]（对 BOS 边界视而不见）</text>
+
+  <line class="arrow" x1="190" y1="230" x2="190" y2="266"/>
+  <text class="alabel" x="200" y="252">DataLoader(pin_memory=True)</text>
+
+  <rect class="box" x="20" y="266" width="340" height="44"/>
+  <text class="lbl" x="35" y="286">Task.iter_batches(batch_size, device)</text>
+  <text class="sub" x="35" y="300">x.to(device, non_blocking=True)（锁页内存才真异步）</text>
+
+  <line x1="20" y1="330" x2="360" y2="330" stroke="#30363d" stroke-dasharray="3,3"/>
+  <text class="sub" x="190" y="326" text-anchor="middle">对比 nanoGPT get_batch()</text>
+
+  <rect class="box" x="20" y="336" width="340" height="44" fill="#0f1622"/>
+  <text class="lbl" x="35" y="356">get_batch(): 整个数据集常驻内存</text>
+  <text class="sub" x="35" y="370">完全随机起点采样，允许窗口重叠</text>
+
+  <text class="sub" x="20" y="404" font-size="9.5">关键差异：llama2.c 是「切块+打乱块顺序」，</text>
+  <text class="sub" x="20" y="418" font-size="9.5">nanoGPT 是「每步都随机选新起点」——都不管故事/</text>
+  <text class="sub" x="20" y="432" font-size="9.5">文档边界，边界信息只能靠 BOS/EOS 这类特殊 token</text>
+  <text class="sub" x="20" y="446" font-size="9.5">让模型自己学。</text>
+</svg>

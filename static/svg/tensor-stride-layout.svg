@@ -1,0 +1,61 @@
+<svg viewBox="0 0 380 430" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <style>
+    .cellA{fill:#241d10;stroke:#e3b341;stroke-width:1;}
+    .cellB{fill:#0f2415;stroke:#3fb950;stroke-width:1;}
+    .cellC{fill:#1e1530;stroke:#bc8cff;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:9.5px;}
+    .sub{fill:#8b949e;font-size:9px;font-family:'Segoe UI',sans-serif;}
+    .title{fill:#58a6ff;font-size:11px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+    .formula{fill:#e6edf3;font-size:11px;}
+  </style>
+
+  <text class="title" x="20" y="18">float* 只是一整块连续内存 + 偏移公式</text>
+
+  <text class="sub" x="20" y="36">wq 逻辑形状 (n_layers, dim, dim)：</text>
+  <g>
+    <rect class="cellA" x="20" y="44" width="34" height="26"/><rect class="cellA" x="54" y="44" width="34" height="26"/><rect class="cellA" x="88" y="44" width="34" height="26"/>
+    <rect class="cellB" x="126" y="44" width="34" height="26"/><rect class="cellB" x="160" y="44" width="34" height="26"/><rect class="cellB" x="194" y="44" width="34" height="26"/>
+    <rect class="cellC" x="232" y="44" width="34" height="26"/><rect class="cellC" x="266" y="44" width="34" height="26"/><rect class="cellC" x="300" y="44" width="34" height="26"/>
+    <rect fill="#161b22" stroke="#30363d" x="338" y="44" width="22" height="26"/>
+    <text class="lbl" x="10" y="61" font-size="8" fill="#e3b341" transform="rotate(-90 10 61)"></text>
+  </g>
+  <text class="lbl" x="46" y="86" fill="#e3b341" text-anchor="middle" font-size="8.5">layer 0</text>
+  <text class="lbl" x="160" y="86" fill="#3fb950" text-anchor="middle" font-size="8.5">layer 1</text>
+  <text class="lbl" x="266" y="86" fill="#bc8cff" text-anchor="middle" font-size="8.5">layer 2</text>
+  <text class="lbl" x="349" y="86" text-anchor="middle" font-size="8.5">…</text>
+  <text class="sub" x="20" y="100">每层是一段 dim×dim 的连续区间（图中每格代表若干元素）</text>
+
+  <rect x="20" y="114" width="340" height="70" fill="#0a0e14" stroke="#30363d" rx="4"/>
+  <text class="formula" x="35" y="136">offset(l, i, j) =</text>
+  <text class="formula" x="35" y="154" fill="#e3b341">l · (dim · dim)</text>
+  <text class="formula" x="150" y="154" fill="#e6edf3"> + </text>
+  <text class="formula" x="165" y="154" fill="#3fb950">i · dim</text>
+  <text class="formula" x="225" y="154" fill="#e6edf3"> + </text>
+  <text class="formula" x="240" y="154" fill="#bc8cff">j</text>
+  <text class="sub" x="35" y="172">w-&gt;wq + l*dim*dim + i*dim + j —— 公式写错不报错，只读出垃圾数据</text>
+
+  <line x1="20" y1="200" x2="360" y2="200" stroke="#30363d" stroke-dasharray="3,3"/>
+  <text class="title" x="20" y="220">shape 相同，stride 不同 → 语义完全不同</text>
+
+  <rect x="20" y="230" width="150" height="50" fill="#161b22" stroke="#30363d" rx="4"/>
+  <text class="lbl" x="32" y="250">shape=(2,3)</text>
+  <text class="lbl" x="32" y="266" fill="#58a6ff">stride=(3,1)</text>
+
+  <text class="sub" x="185" y="250">.transpose()</text>
+  <text class="sub" x="185" y="262">零拷贝，只调</text>
+  <text class="sub" x="185" y="274">换 stride 顺序</text>
+
+  <rect x="210" y="230" width="150" height="50" fill="#161b22" stroke="#30363d" rx="4"/>
+  <text class="lbl" x="222" y="250">shape=(3,2)</text>
+  <text class="lbl" x="222" y="266" fill="#58a6ff">stride=(1,3)</text>
+
+  <text class="sub" x="20" y="300">同一块底层内存，只是「从哪个 offset 开始、按什么形状</text>
+  <text class="sub" x="20" y="314">解读」的元数据变了——这也是 PyTorch Tensor 独立维护</text>
+  <text class="sub" x="20" y="328">.shape 和 .stride() 的原因，只存 shape 做不到这件事。</text>
+
+  <rect x="20" y="346" width="340" height="70" fill="#1e1530" stroke="#bc8cff" rx="4"/>
+  <text class="lbl" x="35" y="364" fill="#bc8cff" font-weight="bold">layer 轴是 C 端序列化的人为产物</text>
+  <text class="sub" x="35" y="380">PyTorch 里 self.layers 是 ModuleList，每层是独立对象，</text>
+  <text class="sub" x="35" y="394">从未拼成带 layer 轴的大 tensor —— export.py 逐层写入文件</text>
+  <text class="sub" x="35" y="408">首尾拼接，才制造出这条 run.c 需要的 layer 轴。</text>
+</svg>

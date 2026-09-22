@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{% block title %}llama2.c 学习笔记{% endblock %}</title>
+<link rel="stylesheet" href="static/css/style.css?v={{ asset_version }}" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+<script>
+(function(){
+  var pref = localStorage.getItem('sidebarState') || (window.innerWidth < 981 ? 'closed' : 'open');
+  document.documentElement.setAttribute('data-sidebar', pref);
+})();
+</script>
+</head>
+<body>
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation"></button>
+<nav class="site-sidebar" id="siteSidebar">
+  <a class="brand" href="index.html">llama2.c 学习笔记</a>
+  <ol>
+    {% for n in nav %}
+    <li><a href="{{ n.slug }}.html" class="{% if num is defined and n.num == num %}active{% endif %}"><span class="nav-num">{{ n.num }}</span>{{ n.title }}</a></li>
+    {% endfor %}
+  </ol>
+</nav>
+<div class="site-main" id="siteMain">
+{% block content %}{% endblock %}
+<footer>基于 <code>/home/dli/llama2.c/STUDY_NOTES.md</code> 整理生成 · 参考 Karpathy <a href="https://github.com/karpathy/llama2.c" target="_blank" rel="noopener">llama2.c</a> 与 <a href="{{ nanogpt_link | default('../nanogpt-learning/index.html') }}">nanoGPT 学习笔记</a></footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('sidebarToggle');
+  btn.addEventListener('click', function(){
+    var next = root.getAttribute('data-sidebar') === 'open' ? 'closed' : 'open';
+    root.setAttribute('data-sidebar', next);
+    localStorage.setItem('sidebarState', next);
+  });
+  document.getElementById('siteMain').addEventListener('click', function(e){
+    if (window.innerWidth < 981 && e.target.closest('a')) {
+      root.setAttribute('data-sidebar', 'closed');
+      localStorage.setItem('sidebarState', 'closed');
+    }
+  });
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ]
+    });
+  }
+})();
+</script>
+</body>
+</html>

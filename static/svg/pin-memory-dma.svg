@@ -1,0 +1,44 @@
+<svg viewBox="0 0 380 440" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar10" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .lbl{fill:#e6edf3;font-size:9.8px;}
+    .sub{fill:#8b949e;font-size:8.8px;font-family:'Segoe UI',sans-serif;}
+    .title{fill:#58a6ff;font-size:11px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#58a6ff;stroke-width:1.4;fill:none;marker-end:url(#ar10);}
+    .warnarrow{stroke:#f85149;stroke-width:1.4;fill:none;marker-end:url(#ar10);}
+  </style>
+
+  <text class="title" x="20" y="18">根源约束：CPU 虚拟内存可移动，GPU DMA 需要地址冻结</text>
+  <rect x="20" y="26" width="150" height="34" fill="#161b22" stroke="#30363d"/>
+  <text class="lbl" x="30" y="47">可分页内存（普通张量）</text>
+  <text class="sub" x="180" y="40">虚拟→物理映射</text>
+  <text class="sub" x="180" y="52">可能随时被 OS 挪动</text>
+
+  <text class="title" x="20" y="86">路径 A：不锁页，non_blocking 静默退化</text>
+  <line class="warnarrow" x1="95" y1="60" x2="95" y2="96"/>
+  <rect x="20" y="96" width="340" height="30" fill="#2a1414" stroke="#f85149"/>
+  <text class="lbl" x="30" y="116" fill="#f85149">CUDA 驱动先同步拷贝到内部锁页中转缓冲区（阻塞！）</text>
+  <line class="warnarrow" x1="190" y1="126" x2="190" y2="152"/>
+  <rect x="20" y="152" width="340" height="30" fill="#161b22" stroke="#30363d"/>
+  <text class="lbl" x="30" y="172">再异步 DMA 到显存 —— non_blocking 提示已不生效</text>
+
+  <line x1="20" y1="196" x2="360" y2="196" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="title" x="20" y="216">路径 B：DataLoader(pin_memory=True)</text>
+  <rect x="20" y="224" width="340" height="30" fill="#0f2415" stroke="#3fb950"/>
+  <text class="lbl" x="30" y="244" fill="#3fb950">额外拷贝一次到锁页内存（确定性 CPU 开销）</text>
+  <line class="arrow" x1="190" y1="254" x2="190" y2="280"/>
+  <rect x="20" y="280" width="340" height="30" fill="#0f2415" stroke="#3fb950"/>
+  <text class="lbl" x="30" y="300" fill="#3fb950">.to(device, non_blocking=True) —— 真异步，可与 GPU 计算重叠</text>
+
+  <rect x="20" y="326" width="340" height="96" fill="#1e1530" stroke="#bc8cff" rx="4"/>
+  <text class="lbl" x="35" y="344" fill="#bc8cff" font-weight="bold">train.py 里的重叠时机</text>
+  <text class="sub" x="35" y="360">with ctx: logits = model(X, Y)   # GPU 在算 forward</text>
+  <text class="sub" x="35" y="374">X, Y = next(train_batch_iter)    # 锁页时是真异步，不用等 GPU</text>
+  <text class="sub" x="35" y="392">这个「同时」能否兑现，完全取决于 pin_memory 是否生效——</text>
+  <text class="sub" x="35" y="406">不是公式，是 DMA 物理地址不可移动这一硬件约束的直接推论。</text>
+</svg>

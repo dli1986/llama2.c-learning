@@ -1,0 +1,64 @@
+<svg viewBox="0 0 380 600" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#161b22;stroke:#30363d;stroke-width:1;rx:6;}
+    .lbl{fill:#e6edf3;font-size:11px;}
+    .sub{fill:#8b949e;font-size:9.5px;}
+    .arrow{stroke:#58a6ff;stroke-width:1.6;fill:none;marker-end:url(#ar1);}
+    .alabel{fill:#58a6ff;font-size:9px;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <rect class="box" x="20" y="10" width="340" height="40"/>
+  <text class="lbl" x="35" y="28">原始故事文本 (.json ×50)</text>
+  <text class="sub" x="35" y="42">TinyStories 数据集</text>
+
+  <line class="arrow" x1="190" y1="50" x2="190" y2="84"/>
+  <text class="alabel" x="200" y="70">tinystories.py: pretokenize()</text>
+
+  <rect class="box" x="20" y="84" width="340" height="40"/>
+  <text class="lbl" x="35" y="102">dataXX.bin ×50</text>
+  <text class="sub" x="35" y="116">训练数据：token id 序列</text>
+
+  <line class="arrow" x1="190" y1="124" x2="190" y2="158"/>
+  <text class="alabel" x="200" y="144">被 train.py 消费</text>
+
+  <rect class="box" x="20" y="158" width="340" height="48"/>
+  <text class="lbl" x="35" y="178">train.py (PyTorch 训练)</text>
+  <text class="sub" x="35" y="192">forward → loss → backward → optimizer.step</text>
+
+  <line class="arrow" x1="190" y1="206" x2="190" y2="240"/>
+  <text class="alabel" x="200" y="226">export.py</text>
+
+  <rect class="box" x="20" y="240" width="340" height="40"/>
+  <text class="lbl" x="35" y="258">model.bin</text>
+  <text class="sub" x="35" y="272">权重，裸二进制，C 端 mmap 读取</text>
+
+  <line x1="20" y1="298" x2="360" y2="298" stroke="#30363d" stroke-dasharray="3,3"/>
+  <text class="sub" x="190" y="294" text-anchor="middle" fill="#8b949e">— 独立的 tokenizer 管线 —</text>
+
+  <rect class="box" x="20" y="306" width="340" height="40"/>
+  <text class="lbl" x="35" y="324">tokenizer.model</text>
+  <text class="sub" x="35" y="338">Meta 预训练 SentencePiece 词表</text>
+
+  <line class="arrow" x1="190" y1="346" x2="190" y2="380"/>
+  <text class="alabel" x="200" y="366">tokenizer.py: export()</text>
+
+  <rect class="box" x="20" y="380" width="340" height="40"/>
+  <text class="lbl" x="35" y="398">tokenizer.bin</text>
+  <text class="sub" x="35" y="412">score + len + 字节内容，变长记录</text>
+
+  <!-- merge lines down into run.c -->
+  <path class="arrow" d="M 190,280 V 460 H 190" stroke-dasharray="0" fill="none"/>
+  <path d="M 100,420 V 452 H 190" stroke="#58a6ff" stroke-width="1.6" fill="none"/>
+  <line class="arrow" x1="190" y1="452" x2="190" y2="466"/>
+
+  <rect class="box" x="20" y="466" width="340" height="64" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="lbl" x="35" y="486" fill="#bc8cff" font-weight="bold">run.c</text>
+  <text class="sub" x="35" y="500">read_checkpoint (mmap) + build_tokenizer</text>
+  <text class="sub" x="35" y="514">forward(token, pos) 逐 token 循环</text>
+  <text class="sub" x="35" y="526">采样 → 生成文本 (achieved tok/s)</text>
+</svg>

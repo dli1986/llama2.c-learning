@@ -1,0 +1,48 @@
+<svg viewBox="0 0 380 430" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI',sans-serif">
+  <defs>
+    <marker id="ar6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/>
+    </marker>
+    <marker id="ar6b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/>
+    </marker>
+  </defs>
+  <style>
+    .axis{stroke:#30363d;stroke-width:1;stroke-dasharray:2,2;}
+    .circle{fill:none;stroke:#21262d;stroke-width:1;}
+    .qv{stroke:#f0883e;stroke-width:2.2;fill:none;marker-end:url(#ar6);}
+    .kv{stroke:#3fb950;stroke-width:2.2;fill:none;marker-end:url(#ar6b);}
+    .lbl{fill:#e6edf3;font-size:12px;}
+    .sub{fill:#8b949e;font-size:10px;}
+    .arcline{stroke:#58a6ff;stroke-width:1.5;fill:none;}
+  </style>
+
+  <text x="20" y="20" font-size="12" font-weight="bold" fill="#58a6ff">RoPE：旋转后的夹角只剩相对距离</text>
+
+  <line class="axis" x1="20" y1="140" x2="360" y2="140"/>
+  <circle class="circle" cx="190" cy="140" r="95"/>
+  <circle cx="190" cy="140" r="2.5" fill="#8b949e"/>
+
+  <!-- q rotated by m*theta -->
+  <line class="qv" x1="190" y1="140" x2="279" y2="108"/>
+  <text class="lbl" x="284" y="104" fill="#f0883e">q' = R(mθ) q</text>
+
+  <!-- k rotated by n*theta -->
+  <line class="kv" x1="190" y1="140" x2="268" y2="195"/>
+  <text class="lbl" x="272" y="212" fill="#3fb950">k' = R(nθ) k</text>
+
+  <!-- arc between q' and k' showing relative angle -->
+  <path class="arcline" d="M 235,120 A 55,55 0 0,1 231,163"/>
+  <text class="lbl" x="240" y="150" fill="#58a6ff" font-size="11">(n−m)θ</text>
+
+  <text class="sub" x="20" y="260">位置 m 的 query 转 mθ，位置 n 的 key 转 nθ，</text>
+  <text class="sub" x="20" y="276">点积 q'·k' 只剩下夹角差 (n−m)θ ——</text>
+  <text class="sub" x="20" y="292">绝对位置 m、n 本身从公式里消失。</text>
+
+  <rect x="20" y="312" width="340" height="100" fill="#1e1530" stroke="#bc8cff" rx="4"/>
+  <text class="lbl" x="35" y="332" fill="#bc8cff" font-weight="bold">为什么 → attention score 只依赖相对距离</text>
+  <text class="sub" x="35" y="350">旋转矩阵是正交变换：只改朝向，不改长度 ‖q‖/‖k‖。</text>
+  <text class="sub" x="35" y="366">R(α)ᵀR(β) = R(β−α) —— 复合旋转的代数性质。</text>
+  <text class="sub" x="35" y="382">对比绝对位置编码 x=tok+pos：点积展开出 4 项交叉，</text>
+  <text class="sub" x="35" y="398">没有干净结构保证「只依赖相对距离」，只能靠训练近似。</text>
+</svg>

@@ -1,0 +1,49 @@
+<svg viewBox="0 0 380 400" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <style>
+    .box{fill:#161b22;stroke:#30363d;stroke-width:1;}
+    .field{fill:#0a0e14;stroke:#30363d;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:10.5px;}
+    .flbl{fill:#e3b341;font-size:9.5px;}
+    .sub{fill:#8b949e;font-size:9.5px;font-family:'Segoe UI',sans-serif;}
+    .title{fill:#58a6ff;font-size:12px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <text class="title" x="20" y="20">tokenizer.bin 字节布局（变长记录）</text>
+
+  <rect class="field" x="20" y="32" width="340" height="26"/>
+  <text class="flbl" x="30" y="49">header: max_token_length (int, 4B)</text>
+
+  <rect class="box" x="20" y="66" width="340" height="80" fill="#0f1622"/>
+  <text class="sub" x="30" y="82">token 0</text>
+  <rect class="field" x="30" y="88" width="90" height="24"/>
+  <text class="flbl" x="36" y="104" font-size="8.5">score (float,4B)</text>
+  <rect class="field" x="126" y="88" width="80" height="24"/>
+  <text class="flbl" x="132" y="104" font-size="8.5">len0 (int,4B)</text>
+  <rect class="field" x="212" y="88" width="130" height="24" fill="#132316" stroke="#3fb950"/>
+  <text class="flbl" x="218" y="104" font-size="8.5" fill="#3fb950">内容 (len0 字节)</text>
+
+  <rect class="box" x="20" y="156" width="340" height="80" fill="#0f1622"/>
+  <text class="sub" x="30" y="172">token 1</text>
+  <rect class="field" x="30" y="178" width="90" height="24"/>
+  <text class="flbl" x="36" y="194" font-size="8.5">score (float,4B)</text>
+  <rect class="field" x="126" y="178" width="80" height="24"/>
+  <text class="flbl" x="132" y="194" font-size="8.5">len1 (int,4B)</text>
+  <rect class="field" x="212" y="178" width="130" height="24" fill="#132316" stroke="#3fb950"/>
+  <text class="flbl" x="218" y="194" font-size="8.5" fill="#3fb950">内容 (len1 字节)</text>
+
+  <text class="sub" x="190" y="256" text-anchor="middle">… 共 vocab_size 个 token，逐条排列 …</text>
+
+  <line x1="20" y1="276" x2="360" y2="276" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="title" x="20" y="300">对比：权重文件是固定 stride</text>
+  <rect class="field" x="20" y="310" width="80" height="24" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="flbl" x="24" y="326" font-size="8" fill="#bc8cff">layer0</text>
+  <rect class="field" x="102" y="310" width="80" height="24" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="flbl" x="106" y="326" font-size="8" fill="#bc8cff">layer1</text>
+  <rect class="field" x="184" y="310" width="80" height="24" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="flbl" x="188" y="326" font-size="8" fill="#bc8cff">layer2</text>
+  <rect class="field" x="266" y="310" width="74" height="24" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="flbl" x="270" y="326" font-size="8" fill="#bc8cff">…</text>
+  <text class="sub" x="20" y="350">每份等长 → 可用 l*dim*dim 直接算偏移跳转；</text>
+  <text class="sub" x="20" y="364">tokenizer.bin 每条变长 → 只能顺序扫描读取。</text>
+</svg>

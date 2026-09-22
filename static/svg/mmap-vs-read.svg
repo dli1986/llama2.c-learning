@@ -1,0 +1,49 @@
+<svg viewBox="0 0 380 420" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <style>
+    .lbl{fill:#e6edf3;font-size:10px;}
+    .sub{fill:#8b949e;font-size:8.8px;font-family:'Segoe UI',sans-serif;}
+    .title{fill:#58a6ff;font-size:11px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+    .barA{fill:#2a1414;stroke:#f85149;}
+    .barB{fill:#0f2415;stroke:#3fb950;}
+    .tick{fill:#3fb950;}
+  </style>
+
+  <text class="title" x="20" y="18">read()+malloc：必须读完整个文件才能开始</text>
+  <rect x="20" y="26" width="60" height="30" fill="#161b22" stroke="#30363d"/>
+  <text class="lbl" x="27" y="45" font-size="9">open()</text>
+  <rect class="barA" x="82" y="26" width="200" height="30"/>
+  <text class="lbl" x="92" y="45" font-size="9" fill="#f85149">阻塞读取整个文件（fread）</text>
+  <rect x="284" y="26" width="76" height="30" fill="#0f2415" stroke="#3fb950"/>
+  <text class="lbl" x="292" y="45" font-size="9" fill="#3fb950">开始用</text>
+  <text class="sub" x="20" y="70">启动延迟高；内存占用=页缓存+堆内存，双倍</text>
+
+  <line x1="20" y1="90" x2="360" y2="90" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="title" x="20" y="110">mmap：几乎立即返回，按需换页</text>
+  <rect x="20" y="118" width="70" height="30" fill="#0f2415" stroke="#3fb950"/>
+  <text class="lbl" x="27" y="137" font-size="9" fill="#3fb950">mmap()</text>
+  <rect x="94" y="118" width="266" height="30" fill="#161b22" stroke="#30363d"/>
+  <text class="tick" cx="0" cy="0" x="114" y="137" font-size="9">▮</text>
+  <text class="tick" x="164" y="137" font-size="9">▮</text>
+  <text class="tick" x="214" y="137" font-size="9">▮</text>
+  <text class="tick" x="264" y="137" font-size="9">▮</text>
+  <text class="tick" x="314" y="137" font-size="9">▮</text>
+  <text class="lbl" x="94" y="164" font-size="8.5" fill="#8b949e">立即开始用，缺页中断时才触发单页磁盘读取</text>
+
+  <text class="sub" x="20" y="184">内存页就是页缓存本身，不在堆里再拷贝一份；</text>
+  <text class="sub" x="20" y="198">干净只读页，内存压力大时可直接丢弃重读，无需写 swap</text>
+
+  <rect x="20" y="216" width="340" height="90" fill="#2a1414" stroke="#f85149" rx="4"/>
+  <text class="lbl" x="35" y="236" fill="#f85149" font-weight="bold">HDD 场景的反直觉之处</text>
+  <text class="sub" x="35" y="252">memory_map_weights 按「权重类型跨层」整体分块存储，</text>
+  <text class="sub" x="35" y="266">但 forward() 按「层」遍历——每层都要在文件里跳着访问</text>
+  <text class="sub" x="35" y="280">9 个分散区域，打断内核顺序预读（readahead）优化。</text>
+  <text class="sub" x="35" y="296">在 HDD 上，这种跳跃寻道可能比一次性顺序读整个文件更慢。</text>
+
+  <rect x="20" y="318" width="340" height="86" fill="#1e1530" stroke="#bc8cff" rx="4"/>
+  <text class="lbl" x="35" y="336" fill="#bc8cff" font-weight="bold">优势场景是 SSD / 热页缓存 / 多进程共享</text>
+  <text class="sub" x="35" y="352">而非「任何介质下都更快」这个容易被过度泛化的说法。</text>
+  <text class="sub" x="35" y="368">另外：run.c 没有 batched prefill——generate() 每次只处理</text>
+  <text class="sub" x="35" y="384">1 个 token，即使消化 prompt 阶段也是逐 token 调用</text>
+  <text class="sub" x="35" y="398">forward()，为 700 行的极简目标牺牲了这项工程优化。</text>
+</svg>

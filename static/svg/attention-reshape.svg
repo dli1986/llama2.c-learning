@@ -1,0 +1,64 @@
+<svg viewBox="0 0 380 440" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#161b22;stroke:#30363d;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:10px;}
+    .sub{fill:#8b949e;font-size:8.8px;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#58a6ff;stroke-width:1.5;fill:none;marker-end:url(#ar5);}
+    .title{fill:#58a6ff;font-size:11px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <text class="title" x="20" y="18">nanoGPT 教学版：N 个独立 Head 对象</text>
+  <rect class="box" x="20" y="26" width="100" height="46"/>
+  <text class="lbl" x="30" y="44">Head 0</text>
+  <text class="sub" x="30" y="58">自己的 wq/wk/wv</text>
+  <rect class="box" x="130" y="26" width="100" height="46"/>
+  <text class="lbl" x="140" y="44">Head 1</text>
+  <text class="sub" x="140" y="58">自己的 wq/wk/wv</text>
+  <rect class="box" x="240" y="26" width="100" height="46"/>
+  <text class="lbl" x="250" y="44">Head 2</text>
+  <text class="sub" x="250" y="58">自己的 wq/wk/wv</text>
+
+  <line class="arrow" x1="70" y1="72" x2="180" y2="104"/>
+  <line class="arrow" x1="190" y1="72" x2="190" y2="104"/>
+  <line class="arrow" x1="290" y1="72" x2="200" y2="104"/>
+  <text class="sub" x="200" y="94">torch.cat([...])，N 次小 matmul</text>
+
+  <rect class="box" x="20" y="104" width="340" height="26" fill="#0f1622"/>
+  <text class="lbl" x="30" y="121">合并后的多头输出</text>
+
+  <line x1="20" y1="148" x2="360" y2="148" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="title" x="20" y="170">llama2.c 工程版：一个大矩阵 + reshape</text>
+  <rect class="box" x="20" y="178" width="340" height="34" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="lbl" x="30" y="199" fill="#bc8cff">wq: nn.Linear(dim, n_heads*head_size)</text>
+
+  <line class="arrow" x1="190" y1="212" x2="190" y2="240"/>
+  <text class="sub" x="200" y="230">1 次大 matmul（BLAS/cache 利用率更高）</text>
+
+  <rect class="box" x="20" y="240" width="340" height="34" fill="#0f1622"/>
+  <text class="lbl" x="30" y="261">q: (B, T, n_heads*head_size)</text>
+
+  <line class="arrow" x1="190" y1="274" x2="190" y2="300"/>
+  <text class="sub" x="200" y="292">.view(n_heads, head_size)（不拷贝）</text>
+
+  <rect class="box" x="20" y="300" width="106" height="40"/>
+  <text class="lbl" x="30" y="316" font-size="9">head 0</text>
+  <text class="sub" x="30" y="330">q + 0*head_size</text>
+  <rect class="box" x="137" y="300" width="106" height="40"/>
+  <text class="lbl" x="147" y="316" font-size="9">head 1</text>
+  <text class="sub" x="147" y="330">q + 1*head_size</text>
+  <rect class="box" x="254" y="300" width="106" height="40"/>
+  <text class="lbl" x="264" y="316" font-size="9">head 2</text>
+  <text class="sub" x="264" y="330">q + 2*head_size</text>
+
+  <rect class="box" x="20" y="356" width="340" height="70" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="lbl" x="35" y="374" fill="#bc8cff" font-weight="bold">GQA（分组查询注意力）</text>
+  <text class="sub" x="35" y="390">n_kv_heads &lt; n_heads 时，kv_mul = n_heads/n_kv_heads，</text>
+  <text class="sub" x="35" y="404">(h/kv_mul)*head_size 让多个 query 头共享同一段 kv 内存——</text>
+  <text class="sub" x="35" y="418">本质是多逻辑下标映射到同一物理偏移，类似广播但非标准 broadcast。</text>
+</svg>

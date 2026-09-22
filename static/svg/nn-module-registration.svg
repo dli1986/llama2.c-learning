@@ -1,0 +1,52 @@
+<svg viewBox="0 0 380 460" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#161b22;stroke:#30363d;stroke-width:1;}
+    .dst{fill:#0f2415;stroke:#3fb950;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:10px;}
+    .code{fill:#e3b341;font-size:9.5px;}
+    .sub{fill:#8b949e;font-size:9px;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#58a6ff;stroke-width:1.5;fill:none;marker-end:url(#ar4);}
+    .hook{fill:#58a6ff;font-size:10px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+  </style>
+
+  <text class="hook" x="20" y="18">① 写：__setattr__ 拦截</text>
+  <rect class="box" x="20" y="26" width="340" height="26"/>
+  <text class="code" x="30" y="43">self.tok_embeddings = nn.Embedding(...)</text>
+  <line class="arrow" x1="190" y1="52" x2="190" y2="76"/>
+  <text class="sub" x="200" y="68">isinstance(value, Module) ?</text>
+  <rect class="dst" x="20" y="76" width="340" height="26"/>
+  <text class="lbl" x="30" y="93" fill="#3fb950">✓ 存入 self._modules['tok_embeddings']（绕开 __dict__）</text>
+
+  <line x1="20" y1="118" x2="360" y2="118" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="hook" x="20" y="136">② 读：__getattr__ 兜底</text>
+  <rect class="box" x="20" y="144" width="340" height="26"/>
+  <text class="code" x="30" y="161">self.tok_embeddings</text>
+  <text class="sub" x="140" y="161" fill="#8b949e">← __dict__ 里找不到</text>
+  <line class="arrow" x1="190" y1="170" x2="190" y2="194"/>
+  <text class="sub" x="200" y="186">仅在默认查找失败时触发</text>
+  <rect class="dst" x="20" y="194" width="340" height="26"/>
+  <text class="lbl" x="30" y="211" fill="#3fb950">✓ 从 self._modules['tok_embeddings'] 取回（同一对象，非拷贝）</text>
+
+  <line x1="20" y1="236" x2="360" y2="236" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="hook" x="20" y="254">③ 调用：__call__ 转发</text>
+  <rect class="box" x="20" y="262" width="340" height="26"/>
+  <text class="code" x="30" y="279">self.tok_embeddings(tokens)</text>
+  <line class="arrow" x1="190" y1="288" x2="190" y2="312"/>
+  <text class="sub" x="200" y="304">Python 语言机制（任意 __call__ 对象）</text>
+  <rect class="dst" x="20" y="312" width="340" height="26"/>
+  <text class="lbl" x="30" y="329" fill="#3fb950">✓ nn.Module.__call__ → 转发到 .forward(tokens)</text>
+
+  <rect class="box" x="20" y="356" width="340" height="90" fill="#1e1530" stroke="#bc8cff"/>
+  <text class="lbl" x="35" y="376" fill="#bc8cff" font-weight="bold">关键纠正</text>
+  <text class="sub" x="35" y="392">h = self.tok_embeddings(tokens) 里的 h 是局部变量赋值，</text>
+  <text class="sub" x="35" y="406">从未经过 self.xxx=，①的 __setattr__ 检查根本没被触发——</text>
+  <text class="sub" x="35" y="420">“hidden”这个名字只是深度学习术语传统，与是否被</text>
+  <text class="sub" x="35" y="434">_parameters/_modules 记录、被 optimizer 更新无因果关系。</text>
+</svg>

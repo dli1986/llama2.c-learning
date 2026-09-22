@@ -1,0 +1,49 @@
+<svg viewBox="0 0 380 460" xmlns="http://www.w3.org/2000/svg" font-family="'Cascadia Code',Consolas,monospace">
+  <defs>
+    <marker id="ar8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <style>
+    .wbox{fill:#1e1530;stroke:#bc8cff;stroke-width:1;}
+    .abox{fill:#0f2415;stroke:#3fb950;stroke-width:1;}
+    .lbl{fill:#e6edf3;font-size:10px;}
+    .sub{fill:#8b949e;font-size:8.8px;font-family:'Segoe UI',sans-serif;}
+    .title{fill:#58a6ff;font-size:11px;font-weight:bold;font-family:'Segoe UI',sans-serif;}
+    .arrow{stroke:#58a6ff;stroke-width:1.4;fill:none;marker-end:url(#ar8);}
+  </style>
+
+  <text class="title" x="20" y="18">TransformerWeights：n_layers 份，常驻不变</text>
+  <rect class="wbox" x="20" y="26" width="80" height="36"/><text class="lbl" x="30" y="48" fill="#bc8cff">layer 0</text>
+  <rect class="wbox" x="104" y="26" width="80" height="36"/><text class="lbl" x="114" y="48" fill="#bc8cff">layer 1</text>
+  <rect class="wbox" x="188" y="26" width="80" height="36"/><text class="lbl" x="198" y="48" fill="#bc8cff">layer 2</text>
+  <rect class="wbox" x="272" y="26" width="88" height="36"/><text class="lbl" x="282" y="48" fill="#bc8cff">…</text>
+  <text class="sub" x="20" y="76">从 checkpoint 加载后只读，n_layers 份权重并存不覆盖</text>
+
+  <line x1="20" y1="94" x2="360" y2="94" stroke="#30363d" stroke-dasharray="3,3"/>
+
+  <text class="title" x="20" y="114">RunState：只 1 份，像水波一样反复覆写</text>
+  <rect class="abox" x="140" y="122" width="100" height="40"/>
+  <text class="lbl" x="155" y="146" fill="#3fb950">x / xb / hb …</text>
+  <path class="arrow" d="M 240,142 h 40 a 20,20 0 0 1 0,40 h -180 a 20,20 0 0 1 0,-40 h 40" fill="none"/>
+  <text class="sub" x="130" y="200" text-anchor="middle">for l in 0..n_layers: 同一块内存被反复覆写</text>
+
+  <rect x="20" y="216" width="340" height="70" fill="#1e1530" stroke="#bc8cff" rx="4"/>
+  <text class="lbl" x="35" y="234" fill="#bc8cff" font-weight="bold">activation 术语辨析</text>
+  <text class="sub" x="35" y="250">activation function=ReLU/SiLU/softmax 具体非线性函数；</text>
+  <text class="sub" x="35" y="264">activation(s)=前向传播算出的任何中间张量（泛指非权重）——</text>
+  <text class="sub" x="35" y="278">q/k/v/x/xb/logits 多数没过字面激活函数，但仍属于这一大类。</text>
+
+  <line x1="20" y1="300" x2="360" y2="300" stroke="#30363d" stroke-dasharray="3,3"/>
+  <text class="title" x="20" y="320">例外：key_cache / value_cache 只追加，不覆写</text>
+
+  <rect fill="#0f2415" stroke="#3fb950" x="20" y="328" width="52" height="34"/><text class="lbl" x="28" y="349" font-size="8.5">pos0</text>
+  <rect fill="#0f2415" stroke="#3fb950" x="76" y="328" width="52" height="34"/><text class="lbl" x="84" y="349" font-size="8.5">pos1</text>
+  <rect fill="#0f2415" stroke="#3fb950" x="132" y="328" width="52" height="34"/><text class="lbl" x="140" y="349" font-size="8.5">pos2</text>
+  <rect fill="#161b22" stroke="#30363d" stroke-dasharray="3,3" x="188" y="328" width="52" height="34"/><text class="lbl" x="200" y="349" font-size="8.5">…</text>
+  <text class="sub" x="20" y="380">既有 layer 轴也有 position 轴——attention 需要回看</text>
+  <text class="sub" x="20" y="394">所有历史位置的 k/v，新 token 只追加，不清空旧的。</text>
+
+  <text class="sub" x="20" y="420" font-size="8.5">att 形状 (n_heads, seq_len)：存的是分数（标量），第二维</text>
+  <text class="sub" x="20" y="434" font-size="8.5">是历史位置数量，跟单头向量宽度 head_size 是两个不相关的数。</text>
+</svg>

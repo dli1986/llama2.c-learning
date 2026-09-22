@@ -1,0 +1,20 @@
+{% extends "base.html.jinja" %}
+{% block title %}{{ page.title }} — llama2.c 学习笔记{% endblock %}
+{% block content %}
+<header class="topbar">
+  <nav class="topnav">
+    <a href="index.html" class="nav-home">← 目录</a>
+    <div class="nav-arrows">
+      {% if prev %}<a href="{{ prev.slug }}.html" class="nav-prev">← 上一节</a>{% else %}<span class="nav-prev disabled">← 上一节</span>{% endif %}
+      <span class="page-counter">{{ num }} / {{ total }}</span>
+      {% if next %}<a href="{{ next.slug }}.html" class="nav-next">下一节 →</a>{% else %}<span class="nav-next disabled">下一节 →</span>{% endif %}
+    </div>
+  </nav>
+</header>
+<main>
+  <h1><span class="step-badge">{{ num }}</span>{{ page.title }}</h1>
+  <div class="page-prose">
+    {{ body_html | safe }}
+  </div>
+</main>
+{% endblock %}

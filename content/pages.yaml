@@ -1,0 +1,62 @@
+# Page order + metadata for the generated site. Prose lives in
+# content/pages/<slug>.md — this file only controls ordering/nav/titles.
+pages:
+  - num: 1
+    slug: "01-overview"
+    title: "总览：从 PyTorch 训练到 700 行 C 推理"
+    subtitle: "train.py → export.py → model.bin，run.c 如何加载并生成文本"
+
+  - num: 2
+    slug: "02-tokenizer"
+    title: "Tokenizer：BPE、Python 包装 vs C 从零实现"
+    subtitle: "SentencePiece 包一层 vs run.c 手写合并循环，二进制格式对齐"
+
+  - num: 3
+    slug: "03-data-pipeline"
+    title: "训练数据管道：tinystories.py"
+    subtitle: "分片、多进程编码、PretokDataset 与 nanoGPT get_batch 的差异"
+
+  - num: 4
+    slug: "04-pytorch-model"
+    title: "PyTorch 模型定义与 nn.Module 注册机制"
+    subtitle: "ModelArgs dataclass，__setattr__/__getattr__/__call__ 三个钩子"
+
+  - num: 5
+    slug: "05-arch-diff"
+    title: "模型结构差异：RMSNorm / RoPE / SwiGLU / GQA vs nanoGPT"
+    subtitle: "四处工程取舍，逐项对照 bigram.py 的教学版实现"
+
+  - num: 6
+    slug: "06-rope-math"
+    title: "RoPE 深度推导：数学证明与手算例子"
+    subtitle: "为什么旋转能让 attention score 只依赖相对距离"
+
+  - num: 7
+    slug: "07-c-tensor-layout"
+    title: "C 语言里的“张量”：flat array + stride"
+    subtitle: "TransformerWeights 的 layer 轴是序列化的人为产物"
+
+  - num: 8
+    slug: "08-runstate-vs-weights"
+    title: "RunState vs TransformerWeights：激活值与权重"
+    subtitle: "一份被反复覆写 vs n_layers 份常驻，KV cache 是例外"
+
+  - num: 9
+    slug: "09-run-c-engineering"
+    title: "run.c 工程实现：mmap、checkpoint 与无 batched prefill"
+    subtitle: "700 行目标下的真实取舍，以及 mmap 并非总是更快"
+
+  - num: 10
+    slug: "10-training-engineering"
+    title: "训练工程细节：pin_memory 与 configurator.py 的取舍"
+    subtitle: "DMA 的硬件约束，以及 Karpathy 明知丑陋仍选择的 hack"
+
+  - num: 11
+    slug: "11-comparison-table"
+    title: "nanoGPT vs llama2.c 全流程对照"
+    subtitle: "12 个维度，从数据源到推理生成逐项对比"
+
+  - num: 12
+    slug: "12-learning-status"
+    title: "学习进度与下一步"
+    subtitle: "诚实标注：哪些已经吃透，哪些还没深入"
